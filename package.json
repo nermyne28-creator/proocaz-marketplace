@@ -1,15 +1,12 @@
 {
   "name": "emergent-marketplace",
   "private": true,
-  "workspaces": [
-    "app"
-  ],
   "scripts": {
-    "dev": "npm --workspace app run dev",
-    "build": "npm --workspace app run build",
-    "start": "npm --workspace app run start",
-    "lint": "npm --workspace app run lint || echo \"no lint script\"",
-    "firebase:ssr": "npm run build && npx firebase deploy --only hosting,functions"
+    "dev": "cd app && npm run dev",
+    "build": "cd app && npm run build",
+    "start": "cd app && npm run start",
+    "lint": "cd app && npm run lint || echo \"no lint script\"",
+    "firebase:ssr": "cd app && npm run build"
   },
   "dependencies": {
     "next": "14.2.3"
