@@ -38,12 +38,12 @@ import { formatPrice } from '@/lib/utils';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 const categories = [
-  { id: 'informatique', name: 'Informatique & IT', icon: Laptop, color: 'from-blue-500 to-blue-600', count: '2.4k' },
-  { id: 'logistique', name: 'Logistique', icon: Truck, color: 'from-emerald-500 to-emerald-600', count: '1.8k' },
-  { id: 'btp', name: 'BTP & Construction', icon: Building2, color: 'from-orange-500 to-orange-600', count: '3.2k' },
-  { id: 'industrie', name: 'Industrie', icon: Wrench, color: 'from-purple-500 to-purple-600', count: '2.1k' },
-  { id: 'mobilier', name: 'Mobilier & Bureau', icon: Package, color: 'from-pink-500 to-pink-600', count: '1.5k' },
-  { id: 'medical', name: 'Médical & Labo', icon: Sparkles, color: 'from-cyan-500 to-cyan-600', count: '890' },
+  { id: 'informatique', name: 'Informatique & IT', icon: Laptop, image: '/images/cat-it.png', count: '2.4k' },
+  { id: 'logistique', name: 'Logistique', icon: Truck, image: '/images/cat-logistics.png', count: '1.8k' },
+  { id: 'btp', name: 'BTP & Construction', icon: Building2, image: '/images/cat-btp.png', count: '3.2k' },
+  { id: 'industrie', name: 'Industrie', icon: Wrench, image: '/images/cat-industry.png', count: '2.1k' },
+  { id: 'mobilier', name: 'Mobilier & Bureau', icon: Package, image: '/images/cat-office.png', count: '1.5k' },
+  { id: 'medical', name: 'Médical & Labo', icon: Sparkles, image: '/images/cat-medical.png', count: '890' },
 ];
 
 const benefits = [
@@ -148,17 +148,20 @@ export default function Home() {
       <Header />
 
       {/* Hero Section - Premium Design */}
-      <section className="relative pt-24 pb-32 md:pt-32 md:pb-48 overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30" />
-
-        {/* Animated gradient orbs */}
-        <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse animation-delay-2000" />
-
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+      <section className="relative pt-32 pb-40 md:pt-48 md:pb-64 overflow-hidden">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/hero-bg.png"
+            alt="Entrepôt moderne ProOccaz"
+            fill
+            className="object-cover"
+            priority
+            quality={90}
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+        </div>
 
         <div className="container relative z-10">
           <div className="max-w-5xl mx-auto text-center space-y-8">
@@ -265,13 +268,23 @@ export default function Home() {
               const Icon = category.icon;
               return (
                 <Link key={category.id} href={`/search?category=${category.id}`}>
-                  <Card className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 overflow-hidden">
-                    <CardContent className="p-6 text-center">
-                      <div className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                        <Icon className="h-8 w-8 text-white" />
+                  <Card className="group cursor-pointer border-0 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden relative h-48">
+                    <div className="absolute inset-0">
+                      <Image
+                        src={category.image}
+                        alt={category.name}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-80 group-hover:opacity-70 transition-opacity" />
+                    </div>
+
+                    <CardContent className="relative h-full flex flex-col justify-end p-4 text-white z-10">
+                      <div className="mb-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                        <Icon className="h-6 w-6 text-primary-foreground" />
                       </div>
-                      <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{category.name}</h3>
-                      <p className="text-xs text-muted-foreground">{category.count} annonces</p>
+                      <h3 className="font-bold text-sm leading-tight mb-1 group-hover:text-primary-foreground transition-colors">{category.name}</h3>
+                      <p className="text-xs text-white/70 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">{category.count} annonces</p>
                     </CardContent>
                   </Card>
                 </Link>
