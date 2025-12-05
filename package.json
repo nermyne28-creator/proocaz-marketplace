@@ -1,9 +1,6 @@
 {
   "name": "emergent-marketplace",
   "private": true,
-  "workspaces": [
-    "app"
-  ],
   "engines": {
     "node": "20.x"
   },
@@ -11,13 +8,6 @@
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app run build",
     "start": "npm --prefix app run start",
-    "lint": "npm --prefix app run lint || echo \"no lint script\"",
-    "firebase:ssr": "npm --prefix app run build"
-  },
-  "dependencies": {
-    "next": "14.2.3"
-  },
-  "devDependencies": {
-    "firebase-tools": "^13.0.0"
+    "lint": "npm --prefix app run lint || echo \"no lint script\""
   }
 }
