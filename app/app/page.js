@@ -22,18 +22,85 @@ import {
   Shield,
   Zap,
   ArrowRight,
-  MapPin
+  MapPin,
+  CheckCircle2,
+  Users,
+  Star,
+  Clock,
+  CreditCard,
+  Headphones,
+  Award,
+  ChevronRight,
+  Play,
+  Quote
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 const categories = [
-  { id: 'informatique', name: 'Informatique & IT', icon: Laptop, color: 'bg-blue-500/10 text-blue-600' },
-  { id: 'logistique', name: 'Logistique', icon: Truck, color: 'bg-green-500/10 text-green-600' },
-  { id: 'btp', name: 'BTP & Construction', icon: Building2, color: 'bg-orange-500/10 text-orange-600' },
-  { id: 'industrie', name: 'Industrie', icon: Wrench, color: 'bg-purple-500/10 text-purple-600' },
-  { id: 'mobilier', name: 'Mobilier & Bureau', icon: Package, color: 'bg-pink-500/10 text-pink-600' },
-  { id: 'autre', name: 'Autres', icon: Sparkles, color: 'bg-gray-500/10 text-gray-600' },
+  { id: 'informatique', name: 'Informatique & IT', icon: Laptop, color: 'from-blue-500 to-blue-600', count: '2.4k' },
+  { id: 'logistique', name: 'Logistique', icon: Truck, color: 'from-emerald-500 to-emerald-600', count: '1.8k' },
+  { id: 'btp', name: 'BTP & Construction', icon: Building2, color: 'from-orange-500 to-orange-600', count: '3.2k' },
+  { id: 'industrie', name: 'Industrie', icon: Wrench, color: 'from-purple-500 to-purple-600', count: '2.1k' },
+  { id: 'mobilier', name: 'Mobilier & Bureau', icon: Package, color: 'from-pink-500 to-pink-600', count: '1.5k' },
+  { id: 'medical', name: 'Médical & Labo', icon: Sparkles, color: 'from-cyan-500 to-cyan-600', count: '890' },
+];
+
+const benefits = [
+  {
+    icon: Shield,
+    title: 'Transactions 100% sécurisées',
+    description: 'Paiement séquestré, libéré uniquement après confirmation de réception.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Économisez jusqu\'à 70%',
+    description: 'Accédez à du matériel professionnel de qualité à des prix imbattables.',
+  },
+  {
+    icon: Zap,
+    title: 'Vente en moins de 48h',
+    description: 'Publiez en 2 minutes, vendez rapidement grâce à notre audience qualifiée.',
+  },
+  {
+    icon: Headphones,
+    title: 'Support dédié',
+    description: 'Une équipe experte vous accompagne à chaque étape de vos transactions.',
+  },
+];
+
+const testimonials = [
+  {
+    name: 'Marie Dupont',
+    role: 'Directrice Achats',
+    company: 'LogiTrans SAS',
+    content: 'Nous avons économisé plus de 40 000€ sur nos achats de chariots élévateurs cette année. La plateforme est intuitive et les vendeurs sont professionnels.',
+    avatar: '👩‍💼',
+    rating: 5,
+  },
+  {
+    name: 'Thomas Bernard',
+    role: 'Responsable IT',
+    company: 'TechCorp France',
+    content: 'ProOccaz nous permet de renouveler notre parc informatique à moindre coût tout en donnant une seconde vie à nos anciens équipements. Parfait pour notre démarche RSE.',
+    avatar: '👨‍💻',
+    rating: 5,
+  },
+  {
+    name: 'Sophie Martin',
+    role: 'Gérante',
+    company: 'Boulangerie Artisanale du Marais',
+    content: 'J\'ai trouvé un four professionnel à moitié prix du neuf. La transaction était simple et sécurisée. Je recommande sans hésitation !',
+    avatar: '👩‍🍳',
+    rating: 5,
+  },
+];
+
+const howItWorks = [
+  { step: '01', title: 'Créez votre compte', description: 'Inscription gratuite en 2 minutes avec votre SIRET' },
+  { step: '02', title: 'Publiez ou recherchez', description: 'Déposez une annonce ou parcourez notre catalogue' },
+  { step: '03', title: 'Négociez en direct', description: 'Contactez les vendeurs via notre messagerie sécurisée' },
+  { step: '04', title: 'Finalisez en sécurité', description: 'Paiement protégé et livraison suivie' },
 ];
 
 export default function Home() {
@@ -52,20 +119,14 @@ export default function Home() {
         const supabase = getSupabaseClient();
         const { data, error } = await supabase
           .from('listings')
-          .select(`
-            *,
-            images (url, alt_text, "order")
-          `)
+          .select(`*, images (url, alt_text, "order")`)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(6);
-
         if (error) throw error;
         setListings(data || []);
         return;
       }
-
-      // Fallback to internal API if Supabase is not configured
       const response = await fetch('/api/listings');
       if (response.ok) {
         const data = await response.json();
@@ -79,67 +140,104 @@ export default function Home() {
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-    } else {
-      router.push('/search');
-    }
+    router.push(searchQuery.trim() ? `/search?q=${encodeURIComponent(searchQuery)}` : '/search');
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans">
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 md:pt-32 md:pb-48 overflow-hidden">
-        <div className="absolute inset-0 bg-hero opacity-10 dark:opacity-5" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+      {/* Hero Section - Premium Design */}
+      <section className="relative pt-24 pb-32 md:pt-32 md:pb-48 overflow-hidden">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30" />
 
-        {/* Animated blobs */}
-        <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob" />
-        <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000" />
+        {/* Animated gradient orbs */}
+        <div className="absolute top-20 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse animation-delay-2000" />
+
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
 
         <div className="container relative z-10">
-          <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
-            <Badge variant="outline" className="px-4 py-1.5 rounded-full border-primary/20 bg-primary/5 text-primary mb-4 animate-slide-up">
-              <Sparkles className="w-3 h-3 mr-2" />
-              La marketplace B2B n°1 en France
-            </Badge>
+          <div className="max-w-5xl mx-auto text-center space-y-8">
+            {/* Trust Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium animate-fade-in">
+              <Award className="w-4 h-4" />
+              Marketplace B2B n°1 en France • +2 500 entreprises
+            </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight font-display leading-[1.1]">
-              Achetez et vendez <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-primary animate-gradient-x">
-                l'occasion pro
+            {/* Main Headline */}
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight font-display leading-[1.05] animate-fade-in">
+              La marketplace des
+              <br />
+              <span className="relative">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-secondary animate-gradient-x">
+                  pros de l'occasion
+                </span>
+                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 300 12" fill="none">
+                  <path d="M2 10C100 2 200 2 298 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="text-primary/30" />
+                </svg>
               </span>
             </h1>
 
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Une plateforme sécurisée pour les professionnels. Donnez une seconde vie à vos équipements et optimisez votre trésorerie.
+            {/* Subheadline */}
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-fade-in animation-delay-200">
+              Achetez et vendez des équipements professionnels d'occasion entre entreprises.
+              <span className="text-foreground font-medium"> Sécurisé. Vérifié. Garanti.</span>
             </p>
 
-            {/* Search Bar */}
-            <div className="flex flex-col md:flex-row gap-3 max-w-2xl mx-auto p-2 bg-white/80 dark:bg-black/40 backdrop-blur-xl rounded-2xl border shadow-2xl shadow-primary/5 mt-12">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
-                <Input
-                  type="text"
-                  placeholder="Que recherchez-vous ? (ex: Chariot élévateur, MacBook...)"
-                  className="w-full h-14 pl-12 bg-transparent border-none focus-visible:ring-0 text-lg placeholder:text-muted-foreground/60"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
+            {/* Search Bar - Premium Style */}
+            <div className="max-w-3xl mx-auto mt-12 animate-fade-in animation-delay-400">
+              <div className="flex flex-col md:flex-row gap-3 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border-2 border-primary/10 shadow-2xl shadow-primary/10">
+                <div className="relative flex-1">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+                  <Input
+                    type="text"
+                    placeholder="Rechercher un équipement (ex: chariot élévateur, serveur, imprimante 3D...)"
+                    className="w-full h-14 pl-14 bg-transparent border-none focus-visible:ring-0 text-lg placeholder:text-muted-foreground/50"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <Button
+                  size="lg"
+                  className="h-14 px-10 rounded-xl bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] font-semibold text-lg"
+                  onClick={handleSearch}
+                >
+                  Rechercher
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               </div>
-              <Button size="lg" className="h-14 px-8 rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]" onClick={handleSearch}>
-                Rechercher
-              </Button>
+
+              {/* Popular Searches */}
+              <div className="flex flex-wrap justify-center gap-2 mt-4 text-sm">
+                <span className="text-muted-foreground">Populaires :</span>
+                {['Chariot élévateur', 'MacBook Pro', 'Imprimante 3D', 'Four professionnel'].map((term) => (
+                  <button
+                    key={term}
+                    onClick={() => { setSearchQuery(term); router.push(`/search?q=${encodeURIComponent(term)}`); }}
+                    className="px-3 py-1 rounded-full bg-muted hover:bg-primary/10 hover:text-primary transition-colors"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Trust Badges */}
-            <div className="pt-12 flex flex-wrap justify-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-              {['Airbus', 'SNCF', 'Vinci', 'TotalEnergies'].map((brand) => (
-                <span key={brand} className="text-xl font-bold font-display">{brand}</span>
+            {/* Trust Indicators */}
+            <div className="pt-16 flex flex-wrap justify-center gap-x-12 gap-y-4 text-muted-foreground animate-fade-in animation-delay-600">
+              {[
+                { icon: Shield, text: 'Paiement sécurisé' },
+                { icon: CheckCircle2, text: 'Vendeurs vérifiés' },
+                { icon: Clock, text: 'Support 7j/7' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <item.icon className="w-5 h-5 text-primary" />
+                  <span className="font-medium">{item.text}</span>
+                </div>
               ))}
             </div>
           </div>
@@ -147,31 +245,35 @@ export default function Home() {
       </section>
 
       {/* Categories Section */}
-      <section className="py-24 bg-muted/30">
-        <div className="container">
-          <div className="flex justify-between items-end mb-12">
+      <section className="py-24 bg-muted/30 relative">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="container relative">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">Parcourir par catégorie</h2>
-              <p className="text-muted-foreground text-lg">
-                Trouvez le matériel adapté à votre secteur d'activité
-              </p>
+              <Badge variant="outline" className="mb-4">Catégories</Badge>
+              <h2 className="text-4xl md:text-5xl font-bold font-display">Tous les secteurs d'activité</h2>
+              <p className="text-muted-foreground text-lg mt-2">Du BTP à l'informatique, trouvez l'équipement adapté à votre métier</p>
             </div>
-            <Link href="/search" className="hidden md:flex items-center text-primary font-medium hover:underline">
-              Voir toutes les catégories <ArrowRight className="ml-2 h-4 w-4" />
+            <Link href="/search" className="flex items-center text-primary font-medium hover:underline group">
+              Voir tout
+              <ChevronRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {categories.map((category, index) => {
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((category) => {
               const Icon = category.icon;
               return (
                 <Link key={category.id} href={`/search?category=${category.id}`}>
-                  <div className="group cursor-pointer">
-                    <div className={`aspect-square rounded-3xl ${category.color} flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg`}>
-                      <Icon className="h-10 w-10 transition-transform duration-500 group-hover:rotate-12" />
-                    </div>
-                    <h3 className="font-semibold text-center group-hover:text-primary transition-colors">{category.name}</h3>
-                  </div>
+                  <Card className="group cursor-pointer border-2 hover:border-primary/50 transition-all duration-300 overflow-hidden">
+                    <CardContent className="p-6 text-center">
+                      <div className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                        <Icon className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">{category.name}</h3>
+                      <p className="text-xs text-muted-foreground">{category.count} annonces</p>
+                    </CardContent>
+                  </Card>
                 </Link>
               );
             })}
@@ -179,28 +281,69 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Featured Listings Section */}
+      {/* How It Works */}
       <section className="py-24">
+        <div className="container">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4">Simple & Rapide</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold font-display">Comment ça marche ?</h2>
+            <p className="text-muted-foreground text-lg mt-4 max-w-2xl mx-auto">
+              De l'inscription à la transaction, tout est pensé pour vous faire gagner du temps
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {howItWorks.map((item, i) => (
+              <div key={i} className="relative group">
+                {i < howItWorks.length - 1 && (
+                  <div className="hidden lg:block absolute top-12 left-1/2 w-full h-0.5 bg-gradient-to-r from-primary/50 to-transparent" />
+                )}
+                <div className="relative bg-card rounded-2xl p-8 border-2 hover:border-primary/50 transition-all group-hover:shadow-xl">
+                  <div className="text-6xl font-bold font-display text-primary/10 group-hover:text-primary/20 transition-colors absolute top-4 right-4">
+                    {item.step}
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-lg mb-6">
+                    {item.step}
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                  <p className="text-muted-foreground">{item.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Link href="/auth/register">
+              <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20">
+                Commencer gratuitement
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Listings */}
+      <section className="py-24 bg-muted/30">
         <div className="container">
           <div className="flex items-center justify-between mb-12">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-2 font-display">Dernières annonces</h2>
-              <p className="text-muted-foreground">Les meilleures opportunités du moment</p>
+              <Badge variant="outline" className="mb-4">Opportunités</Badge>
+              <h2 className="text-4xl md:text-5xl font-bold font-display">Dernières annonces</h2>
+              <p className="text-muted-foreground mt-2">Les meilleures affaires du moment</p>
             </div>
             <Link href="/search">
-              <Button variant="outline" className="rounded-full">Voir tout</Button>
+              <Button variant="outline" className="rounded-full">Voir tout le catalogue</Button>
             </Link>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="space-y-4">
-                  <div className="skeleton h-64 w-full rounded-2xl" />
-                  <div className="space-y-2">
-                    <div className="skeleton h-6 w-3/4 rounded" />
-                    <div className="skeleton h-4 w-1/2 rounded" />
-                  </div>
+                <div key={i} className="space-y-4 animate-pulse">
+                  <div className="h-64 bg-muted rounded-2xl" />
+                  <div className="h-6 bg-muted rounded w-3/4" />
+                  <div className="h-4 bg-muted rounded w-1/2" />
                 </div>
               ))}
             </div>
@@ -208,8 +351,8 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {listings.map((listing) => (
                 <Link key={listing.id} href={`/listing/${listing.id}`}>
-                  <Card className="group overflow-hidden border-none shadow-none bg-transparent hover:bg-muted/30 transition-colors rounded-3xl">
-                    <div className="relative aspect-[4/3] rounded-3xl overflow-hidden mb-4">
+                  <Card className="group overflow-hidden border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl">
+                    <div className="relative aspect-[4/3] overflow-hidden">
                       {listing.images?.[0]?.url ? (
                         <Image
                           src={listing.images[0].url}
@@ -218,29 +361,23 @@ export default function Home() {
                           className="object-cover transition-transform duration-700 group-hover:scale-110"
                         />
                       ) : (
-                        <div className="flex items-center justify-center h-full bg-muted text-muted-foreground">
-                          <Package className="h-12 w-12 opacity-20" />
+                        <div className="flex items-center justify-center h-full bg-muted">
+                          <Package className="h-16 w-16 text-muted-foreground/30" />
                         </div>
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                        <Button className="w-full bg-white text-black hover:bg-white/90 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                          Voir l'annonce
-                        </Button>
-                      </div>
-                      <Badge className="absolute top-4 right-4 bg-white/90 text-black backdrop-blur-sm hover:bg-white">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <Badge className="absolute top-4 right-4 bg-white/90 text-black">
                         {listing.condition || 'Bon état'}
                       </Badge>
                     </div>
-                    <CardContent className="p-2 space-y-2">
-                      <div className="flex justify-between items-start">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">{listing.title}</h3>
-                        <p className="font-bold text-primary text-lg">{formatPrice(listing.price)}</p>
                       </div>
+                      <p className="text-2xl font-bold text-primary mb-3">{formatPrice(listing.price)}</p>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <MapPin className="h-4 w-4 mr-1" />
                         {listing.location || 'France'}
-                        <span className="mx-2">•</span>
-                        {new Date(listing.created_at).toLocaleDateString()}
                       </div>
                     </CardContent>
                   </Card>
@@ -248,45 +385,45 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-24 bg-muted/20 rounded-3xl border-2 border-dashed">
-              <Package className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
-              <h3 className="text-xl font-semibold mb-2">Aucune annonce pour le moment</h3>
-              <p className="text-muted-foreground mb-6">Soyez le premier à publier une annonce !</p>
+            <div className="text-center py-24 bg-background rounded-3xl border-2 border-dashed">
+              <Package className="h-20 w-20 mx-auto mb-6 text-muted-foreground/30" />
+              <h3 className="text-2xl font-bold mb-2">Aucune annonce pour le moment</h3>
+              <p className="text-muted-foreground mb-8">Soyez le premier à publier une annonce !</p>
               <Link href="/create-listing">
-                <Button>Déposer une annonce</Button>
+                <Button size="lg" className="rounded-full">
+                  Déposer une annonce
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               </Link>
             </div>
           )}
         </div>
       </section>
 
-      {/* Why OccaSync Section */}
-      <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
+      {/* Benefits Section */}
+      <section className="py-24 bg-gradient-to-br from-primary via-primary to-secondary text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
-        <div className="container relative z-10">
+        <div className="container relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <Badge variant="outline" className="border-white/20 text-white mb-6">Pourquoi nous choisir ?</Badge>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6 font-display leading-tight">
-                La solution complète pour <br />votre matériel professionnel
+              <Badge variant="outline" className="border-white/30 text-white mb-6">Nos avantages</Badge>
+              <h2 className="text-4xl md:text-5xl font-bold font-display leading-tight mb-6">
+                Pourquoi les pros nous font confiance ?
               </h2>
-              <p className="text-lg text-primary-foreground/80 mb-8 leading-relaxed">
-                OccaSync simplifie l'achat et la vente de matériel B2B. Nous sécurisons chaque étape pour vous permettre de vous concentrer sur votre activité.
+              <p className="text-xl text-white/80 mb-10">
+                ProOccaz, c'est la garantie d'une transaction sécurisée entre professionnels,
+                avec un accompagnement de A à Z.
               </p>
 
-              <div className="space-y-6">
-                {[
-                  { icon: Shield, title: "Transactions sécurisées", desc: "Paiements séquestrés jusqu'à la livraison" },
-                  { icon: TrendingUp, title: "Meilleurs prix", desc: "Jusqu'à -70% sur le prix du neuf" },
-                  { icon: Zap, title: "Rapidité", desc: "Mise en ligne en 2 minutes, vente en 48h" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start space-x-4">
-                    <div className="p-3 rounded-xl bg-white/10 backdrop-blur-sm">
-                      <item.icon className="h-6 w-6" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {benefits.map((benefit, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shrink-0">
+                      <benefit.icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">{item.title}</h3>
-                      <p className="text-primary-foreground/70">{item.desc}</p>
+                      <h3 className="font-bold mb-1">{benefit.title}</h3>
+                      <p className="text-sm text-white/70">{benefit.description}</p>
                     </div>
                   </div>
                 ))}
@@ -294,29 +431,30 @@ export default function Home() {
             </div>
 
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-tr from-secondary to-primary rounded-3xl blur-2xl opacity-50" />
-              <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-white/5 rounded-3xl blur-2xl" />
+              <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-white/10 pb-6">
                     <div>
-                      <p className="text-sm text-white/60">Ventes ce mois-ci</p>
-                      <p className="text-3xl font-bold">142,500 €</p>
+                      <p className="text-sm text-white/60">Volume de transactions</p>
+                      <p className="text-4xl font-bold font-display">2.4M €</p>
+                      <p className="text-sm text-green-300 flex items-center mt-1">
+                        <TrendingUp className="w-4 h-4 mr-1" /> +28% ce mois
+                      </p>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                      <TrendingUp className="h-6 w-6" />
+                    <div className="w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center">
+                      <TrendingUp className="w-8 h-8 text-green-300" />
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    {[1, 2, 3].map((_, i) => (
-                      <div key={i} className="flex items-center space-x-4">
-                        <div className="h-10 w-10 rounded-lg bg-white/10" />
-                        <div className="flex-1">
-                          <div className="h-2 w-24 bg-white/20 rounded mb-2" />
-                          <div className="h-2 w-16 bg-white/10 rounded" />
-                        </div>
-                        <div className="h-4 w-12 bg-white/20 rounded" />
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <p className="text-3xl font-bold">847</p>
+                      <p className="text-sm text-white/60">Ventes ce mois</p>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-4">
+                      <p className="text-3xl font-bold">98%</p>
+                      <p className="text-sm text-white/60">Satisfaction</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -325,23 +463,62 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="container text-center relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold mb-6 font-display">
+      {/* Testimonials */}
+      <section className="py-24">
+        <div className="container">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4">Témoignages</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold font-display">Ils nous font confiance</h2>
+            <p className="text-muted-foreground text-lg mt-4">Découvrez les retours de nos utilisateurs</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, i) => (
+              <Card key={i} className="border-2 hover:border-primary/50 transition-all hover:shadow-xl">
+                <CardContent className="p-8">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(testimonial.rating)].map((_, j) => (
+                      <Star key={j} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <Quote className="w-10 h-10 text-primary/20 mb-4" />
+                  <p className="text-muted-foreground mb-6 leading-relaxed">"{testimonial.content}"</p>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+                      {testimonial.avatar}
+                    </div>
+                    <div>
+                      <p className="font-bold">{testimonial.name}</p>
+                      <p className="text-sm text-muted-foreground">{testimonial.role} • {testimonial.company}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-24 bg-muted/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="container relative text-center">
+          <Badge variant="outline" className="mb-6">Rejoignez-nous</Badge>
+          <h2 className="text-4xl md:text-6xl font-bold font-display mb-6">
             Prêt à faire des affaires ?
           </h2>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Rejoignez plus de 2 500 entreprises qui utilisent OccaSync au quotidien.
+            Rejoignez les +2 500 entreprises qui utilisent ProOccaz pour optimiser leurs achats et ventes d'équipements.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/register">
-              <Button size="lg" className="h-14 px-8 text-lg rounded-full bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20">
+              <Button size="lg" className="h-16 px-10 text-lg rounded-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 shadow-xl shadow-primary/25">
                 Créer un compte gratuit
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/search">
-              <Button size="lg" variant="outline" className="h-14 px-8 text-lg rounded-full border-2 hover:bg-muted">
+              <Button size="lg" variant="outline" className="h-16 px-10 text-lg rounded-full border-2">
                 Explorer le catalogue
               </Button>
             </Link>

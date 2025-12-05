@@ -96,11 +96,11 @@ export default function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-3 group">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-white shadow-lg transition-transform group-hover:scale-105 group-hover:rotate-3">
-            <span className="text-xl font-bold font-display">O</span>
+            <span className="text-xl font-bold font-display">P</span>
             <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <span className="text-2xl font-bold font-display bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">
-            OccaSync
+            ProOccaz
           </span>
         </Link>
 

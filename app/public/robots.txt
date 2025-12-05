@@ -1,3 +1,28 @@
+# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
-Sitemap: /sitemap.xml
+
+# Sitemaps
+Sitemap: https://prooccaz.com/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /auth/
+
+# Allow search engines to index these important pages
+Allow: /
+Allow: /search
+Allow: /tarifs
+Allow: /blog
+Allow: /aide
+Allow: /contact
+Allow: /cgu
+Allow: /confidentialite
+Allow: /cookies
+Allow: /etat-service
+Allow: /a-propos
