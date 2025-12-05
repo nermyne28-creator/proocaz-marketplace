@@ -33,10 +33,10 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value:
               "default-src 'self'; " +
-              "img-src 'self' https://res.cloudinary.com https://*.supabase.co data:; " +
+              "img-src 'self' https://res.cloudinary.com https://*.supabase.co data: blob:; " +
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
               "font-src 'self' https://fonts.gstatic.com data:; " +
-              "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com" + (isProd ? "" : " 'unsafe-eval'") + "; " +
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; " +
               "connect-src 'self' " + (process.env.NEXT_PUBLIC_BASE_URL || "") + " https://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com; " +
               "frame-ancestors 'self';",
           },
