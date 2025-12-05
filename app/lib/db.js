@@ -1,4 +1,6 @@
 import { MongoClient } from 'mongodb';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 const uri = process.env.MONGO_URL;
 const dbName = process.env.DB_NAME || 'occasync';
@@ -6,7 +8,39 @@ const dbName = process.env.DB_NAME || 'occasync';
 let client = null;
 let db = null;
 
-const memoryStore = new Map();
+// File-based persistence for in-memory fallback
+const DATA_FILE = join(process.cwd(), '.data', 'db.json');
+
+function loadData() {
+  try {
+    if (existsSync(DATA_FILE)) {
+      const data = JSON.parse(readFileSync(DATA_FILE, 'utf-8'));
+      return new Map(Object.entries(data));
+    }
+  } catch (e) {
+    console.error('Error loading data:', e);
+  }
+  return new Map();
+}
+
+function saveData(store) {
+  try {
+    const dir = join(process.cwd(), '.data');
+    if (!existsSync(dir)) {
+      require('fs').mkdirSync(dir, { recursive: true });
+    }
+    const data = {};
+    for (const [key, value] of store.entries()) {
+      data[key] = value;
+    }
+    writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('Error saving data:', e);
+  }
+}
+
+// Initialize from file
+const memoryStore = loadData();
 
 function matchFilter(doc, filter) {
   if (!filter || Object.keys(filter).length === 0) return true;
@@ -39,6 +73,9 @@ function matchFilter(doc, filter) {
 function collectionWrapper(name) {
   if (!memoryStore.has(name)) memoryStore.set(name, []);
   const arr = memoryStore.get(name);
+
+  const persist = () => saveData(memoryStore);
+
   return {
     find(filter) {
       let results = arr.filter((d) => matchFilter(d, filter || {}));
@@ -60,7 +97,11 @@ function collectionWrapper(name) {
       return chain;
     },
     findOne(filter) { return Promise.resolve(arr.find((d) => matchFilter(d, filter || {})) || null); },
-    insertOne(doc) { arr.push(doc); return Promise.resolve({ insertedId: doc.id || null }); },
+    insertOne(doc) {
+      arr.push(doc);
+      persist();
+      return Promise.resolve({ insertedId: doc.id || null });
+    },
     updateOne(filter, update) {
       const idx = arr.findIndex((d) => matchFilter(d, filter || {}));
       if (idx === -1) return Promise.resolve({ matchedCount: 0, modifiedCount: 0 });
@@ -74,12 +115,14 @@ function collectionWrapper(name) {
         }
       }
       arr[idx] = target;
+      persist();
       return Promise.resolve({ matchedCount: 1, modifiedCount: 1 });
     },
     deleteOne(filter) {
       const idx = arr.findIndex((d) => matchFilter(d, filter || {}));
       if (idx === -1) return Promise.resolve({ deletedCount: 0 });
       arr.splice(idx, 1);
+      persist();
       return Promise.resolve({ deletedCount: 1 });
     },
     countDocuments(filter) { return Promise.resolve(arr.filter((d) => matchFilter(d, filter || {})).length); },
@@ -103,15 +146,17 @@ export async function connectDB() {
         await db.collection('transactions').createIndex({ id: 1 }, { unique: true });
         await db.collection('transactions').createIndex({ buyerId: 1 });
         await db.collection('transactions').createIndex({ sellerId: 1 });
-      } catch {}
+      } catch { }
       return db;
-    } catch {}
+    } catch { }
   }
+  // Use file-backed in-memory database
   const memDb = {
-    databaseName: 'inmemory',
+    databaseName: 'filebacked',
     collection(name) { return collectionWrapper(name); },
   };
   db = memDb;
+  console.log('Using file-backed database (no MongoDB configured)');
   return db;
 }
 
