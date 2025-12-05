@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Shield } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -43,31 +43,31 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
       <div className="w-full max-w-md">
         <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-8">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour à l'accueil
         </Link>
 
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
-              <span className="text-3xl font-bold text-white">O</span>
+        <Card className="border-2">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+              <span className="text-3xl font-bold text-white font-display">P</span>
             </div>
-            <CardTitle className="text-2xl">Connexion</CardTitle>
-            <CardDescription>Connectez-vous à votre compte OccaSync</CardDescription>
+            <CardTitle className="text-2xl font-display">Connexion</CardTitle>
+            <CardDescription>Connectez-vous à votre compte ProOccaz</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
-                  Email
+                  Email professionnel
                 </label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder="votre@entreprise.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -75,9 +75,14 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Mot de passe
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="text-sm font-medium">
+                    Mot de passe
+                  </label>
+                  <Link href="/auth/forgot-password" className="text-xs text-primary hover:underline">
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
                 <Input
                   id="password"
                   type="password"
@@ -88,16 +93,22 @@ export default function LoginPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? 'Connexion...' : 'Se connecter'}
               </Button>
             </form>
 
-            <div className="mt-6 text-center text-sm">
-              <span className="text-muted-foreground">Pas encore de compte ? </span>
-              <Link href="/auth/register" className="text-primary font-medium hover:underline">
-                S'inscrire
-              </Link>
+            <div className="mt-6 pt-6 border-t">
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-4">
+                <Shield className="w-4 h-4" />
+                <span>Connexion sécurisée</span>
+              </div>
+              <p className="text-center text-sm">
+                <span className="text-muted-foreground">Pas encore de compte ? </span>
+                <Link href="/auth/register" className="text-primary font-medium hover:underline">
+                  Créer un compte
+                </Link>
+              </p>
             </div>
           </CardContent>
         </Card>
