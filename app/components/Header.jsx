@@ -3,12 +3,10 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Menu, X, Plus, LogOut, LayoutDashboard, MessageSquare, Sun, Moon, User } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard, MessageSquare, Sun, Moon, User, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,6 +16,11 @@ export default function Header() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -26,62 +29,58 @@ export default function Header() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Check for JWT token in localStorage
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setUser(null);
-      return;
-    }
-
-    const client = getSupabaseClient();
-
-    const getUser = async () => {
-      const { data: { session }, error } = await client.auth.getSession();
-      if (!error && session?.user) {
-        setUser(session.user);
-        fetchUnreadCount(session.user.id, client);
-      } else {
+    const checkAuth = () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          // Decode JWT to get user info
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.exp * 1000 > Date.now()) {
+            setUser({
+              id: payload.userId,
+              email: payload.email,
+              company: payload.company,
+              role: payload.role
+            });
+          } else {
+            // Token expired
+            localStorage.removeItem('token');
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
         setUser(null);
       }
     };
 
-    getUser();
+    checkAuth();
 
-    const { data: authListener } = client.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchUnreadCount(session.user.id, client);
-      } else {
-        setUser(null);
-      }
-    });
+    // Listen for storage changes (login/logout in other tabs)
+    window.addEventListener('storage', checkAuth);
+
+    // Listen for custom auth events
+    window.addEventListener('auth-change', checkAuth);
 
     return () => {
-      authListener?.subscription?.unsubscribe();
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('auth-change', checkAuth);
     };
-  }, []);
+  }, [pathname]); // Re-check on route change
 
-  const fetchUnreadCount = async (userId, clientInstance) => {
-    try {
-      if (!isSupabaseConfigured) return;
-      const client = clientInstance || getSupabaseClient();
-      const { count, error } = await client
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('receiver_id', userId)
-        .eq('read', false);
-
-      if (!error) setUnreadCount(count || 0);
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    if (isSupabaseConfigured) {
-      await getSupabaseClient().auth.signOut();
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    window.dispatchEvent(new Event('auth-change'));
     router.push('/');
   };
+
+  // Don't render user state until mounted (to avoid hydration mismatch)
+  const isLoggedIn = mounted && user !== null;
 
   return (
     <header
@@ -116,8 +115,16 @@ export default function Header() {
             Rechercher
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
           </Link>
-          {user ? (
+          {isLoggedIn ? (
             <div className="flex items-center space-x-4">
+              {/* User indicator */}
+              <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium max-w-[120px] truncate">
+                  {user?.company || user?.email?.split('@')[0]}
+                </span>
+              </div>
+
               <Link
                 href="/dashboard"
                 className={cn(
@@ -210,8 +217,14 @@ export default function Header() {
               Rechercher
             </Link>
 
-            {user ? (
+            {isLoggedIn ? (
               <>
+                {/* User badge mobile */}
+                <div className="flex items-center space-x-3 p-4 rounded-xl bg-primary/10 text-primary">
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">{user?.company || user?.email}</span>
+                </div>
+
                 <Link
                   href="/dashboard"
                   className="text-lg font-medium p-4 rounded-xl hover:bg-muted transition-colors flex items-center"

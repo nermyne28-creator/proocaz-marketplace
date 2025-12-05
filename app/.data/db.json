@@ -1,0 +1,30 @@
+{
+  "users": [
+    {
+      "id": "944d0e43-c9d2-4565-9ca7-828904359b36",
+      "email": "safwen18@outlook.be",
+      "password": "$2a$10$fwvqCK98Bvnf2s7RW/K5qe5JkPtCjDgNYyr5mTX2BO0ZGLg4ciC7O",
+      "company": "sasa",
+      "siret": "",
+      "role": "buyer",
+      "verified": false,
+      "createdAt": "2025-12-05T22:18:59.868Z"
+    }
+  ],
+  "listings": [
+    {
+      "id": "8796ebf1-5167-4090-b7e4-c6dc336e0803",
+      "title": "Test Laptop",
+      "description": "Great laptop for work",
+      "category": "informatique",
+      "price": 500,
+      "condition": "good",
+      "location": "Paris",
+      "images": [],
+      "sellerId": "944d0e43-c9d2-4565-9ca7-828904359b36",
+      "status": "active",
+      "views": 0,
+      "createdAt": "2025-12-05T22:23:38.271Z"
+    }
+  ]
+}
