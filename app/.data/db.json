@@ -65,6 +65,20 @@
       "status": "active",
       "views": 6,
       "createdAt": "2025-12-05T23:29:54.654Z"
+    },
+    {
+      "id": "a6ef7fcb-1e1a-47e4-baab-cacdf2984e0a",
+      "title": "Test Edit Annonce",
+      "description": "Description pour test edit",
+      "category": "informatique",
+      "price": 100,
+      "condition": "good",
+      "location": "",
+      "images": [],
+      "sellerId": "4dcbcceb-6519-4ab1-acca-c7a66b1a66ec",
+      "status": "active",
+      "views": 4,
+      "createdAt": "2025-12-05T23:41:34.301Z"
     }
   ]
 }

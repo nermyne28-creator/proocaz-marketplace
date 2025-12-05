@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
   const [listings, setListings] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [messageCount, setMessageCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -29,6 +30,7 @@ export default function DashboardPage() {
 
     fetchUserData(token);
     fetchUserTransactions(token);
+    fetchMessageCount(token);
   }, []);
 
   const fetchUserData = async (token) => {
@@ -75,6 +77,18 @@ export default function DashboardPage() {
       setTransactions(data.transactions || []);
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    }
+  };
+
+  const fetchMessageCount = async (token) => {
+    try {
+      const response = await fetch('/api/messages/unread-count', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      setMessageCount(data.count || 0);
+    } catch (error) {
+      console.error('Error fetching message count:', error);
     }
   };
 
@@ -152,7 +166,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Messages</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{messageCount}</p>
                 </div>
                 <MessageSquare className="h-8 w-8 text-blue-500" />
               </div>
@@ -225,8 +239,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Badge>{listing.status}</Badge>
-                      <Link href={`/listing/${listing.id}`}>
-                        <Button variant="outline" size="sm">
+                      <Link href={`/edit-listing/${listing.id}`}>
+                        <Button variant="outline" size="sm" title="Modifier">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
