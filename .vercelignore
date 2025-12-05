@@ -1,7 +1,12 @@
 node_modules
+/node_modules
+functions
 build
 dist
 .git
 .trae
 .log
 .figma
+firebase.json
+.firebaserc
+deploy.ps1
