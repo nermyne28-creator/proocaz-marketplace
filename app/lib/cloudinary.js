@@ -1,4 +1,7 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 export const hasCloudinaryConfig = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -13,12 +16,36 @@ if (hasCloudinaryConfig) {
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
 } else {
-  console.warn('Cloudinary non configure. Ajoutez CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY et CLOUDINARY_API_SECRET.');
+  console.warn('Cloudinary non configure. Les images seront stockees localement.');
 }
 
-export async function uploadToCloudinary(buffer, folder = 'occasync/listings') {
+// Local storage fallback
+function saveToLocal(buffer, mimeType) {
+  const uploadDir = join(process.cwd(), 'public', 'uploads');
+
+  // Create uploads directory if it doesn't exist
+  if (!existsSync(uploadDir)) {
+    mkdirSync(uploadDir, { recursive: true });
+  }
+
+  // Determine file extension
+  const ext = mimeType === 'image/png' ? 'png' :
+    mimeType === 'image/webp' ? 'webp' : 'jpg';
+
+  const filename = `${uuidv4()}.${ext}`;
+  const filepath = join(uploadDir, filename);
+
+  writeFileSync(filepath, buffer);
+
+  // Return public URL
+  return `/uploads/${filename}`;
+}
+
+export async function uploadToCloudinary(buffer, folder = 'occasync/listings', mimeType = 'image/jpeg') {
+  // If Cloudinary not configured, use local storage
   if (!hasCloudinaryConfig) {
-    throw new Error('Cloudinary non configure. Ajoutez les variables CLOUDINARY_*.');
+    console.log('Using local storage for image upload');
+    return saveToLocal(buffer, mimeType);
   }
 
   return new Promise((resolve, reject) => {
@@ -33,7 +60,14 @@ export async function uploadToCloudinary(buffer, folder = 'occasync/listings') {
       },
       (error, result) => {
         if (error) {
-          reject(error);
+          // Fallback to local storage on Cloudinary error
+          console.error('Cloudinary error, falling back to local:', error.message);
+          try {
+            const localUrl = saveToLocal(buffer, mimeType);
+            resolve(localUrl);
+          } catch (localError) {
+            reject(localError);
+          }
         } else {
           resolve(result.secure_url);
         }

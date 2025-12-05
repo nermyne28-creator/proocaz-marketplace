@@ -260,7 +260,7 @@ async function handleCreateListing(request) {
     const listingId = uuidv4();
     const imageUrls = [];
 
-    // Upload images to Cloudinary
+    // Upload images to Cloudinary or local storage
     for (const image of images) {
       if (image && image.size > 0) {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -273,11 +273,12 @@ async function handleCreateListing(request) {
         }
         try {
           const buffer = Buffer.from(await image.arrayBuffer());
-          const cloudinaryUrl = await uploadToCloudinary(buffer, 'occasync/listings');
-          imageUrls.push(cloudinaryUrl);
+          const imageUrl = await uploadToCloudinary(buffer, 'occasync/listings', image.type);
+          imageUrls.push(imageUrl);
         } catch (uploadError) {
-          console.error('Cloudinary upload error:', uploadError);
-          return errorResponse('Echec du telechargement de l\'image. Verifiez la configuration Cloudinary.', 500);
+          console.error('Image upload error:', uploadError);
+          // Continue without this image instead of failing
+          continue;
         }
       }
     }
@@ -331,10 +332,10 @@ async function handleGetListing(request, id) {
         ...listing,
         seller: seller
           ? {
-              id: seller.id,
-              company: seller.company,
-              verified: seller.verified,
-            }
+            id: seller.id,
+            company: seller.company,
+            verified: seller.verified,
+          }
           : null,
       },
     });
@@ -739,7 +740,7 @@ async function handleGenerateInvoice(request, transactionId) {
   try {
     const user = requireAuth(request);
     const db = await connectDB();
-    
+
     const transactions = db.collection('transactions');
     const users = db.collection('users');
     const listings = db.collection('listings');
@@ -750,9 +751,9 @@ async function handleGenerateInvoice(request, transactionId) {
     }
 
     // Verify user is buyer or seller or admin
-    if (transaction.buyerId !== user.userId && 
-        transaction.sellerId !== user.userId && 
-        user.role !== 'admin') {
+    if (transaction.buyerId !== user.userId &&
+      transaction.sellerId !== user.userId &&
+      user.role !== 'admin') {
       return errorResponse('Non autorisé', 403);
     }
 
