@@ -10,8 +10,9 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { ArrowLeft, MapPin, Package, ShieldCheck, MessageSquare, CreditCard } from 'lucide-react';
+import { ArrowLeft, MapPin, Package, ShieldCheck, MessageSquare, CreditCard, Send } from 'lucide-react';
 import { formatPrice, formatDate } from '@/lib/utils';
 
 export default function ListingDetailPage() {
@@ -21,8 +22,11 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [user, setUser] = useState(null);
+  const [message, setMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -80,6 +84,68 @@ export default function ListingDetailPage() {
     setShowPaymentModal(true);
   };
 
+  const handleContactSeller = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Veuillez vous connecter pour contacter le vendeur');
+      router.push('/auth/login');
+      return;
+    }
+
+    if (user && listing && user.id === listing.sellerId) {
+      toast.error('Vous ne pouvez pas vous contacter vous-même');
+      return;
+    }
+
+    // Pre-fill message with listing context
+    setMessage(`Bonjour, je suis intéressé par votre annonce "${listing.title}". `);
+    setShowContactModal(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim()) {
+      toast.error('Veuillez écrire un message');
+      return;
+    }
+
+    setSendingMessage(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiverId: listing.sellerId,
+          listingId: listing.id,
+          content: message,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Message envoyé au vendeur ! 📩');
+        setShowContactModal(false);
+        setMessage('');
+
+        // Offer to go to messages
+        setTimeout(() => {
+          if (confirm('Voulez-vous voir vos messages ?')) {
+            router.push('/messages');
+          }
+        }, 500);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Erreur lors de l\'envoi');
+      }
+    } catch (error) {
+      toast.error('Erreur réseau');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const handleConfirmPayment = async () => {
     setProcessing(true);
     try {
@@ -98,7 +164,7 @@ export default function ListingDetailPage() {
       if (response.ok) {
         toast.success('Paiement simulé avec succès ! 🎉');
         setShowPaymentModal(false);
-        
+
         // Simulate payment processing
         setTimeout(() => {
           toast.success('Transaction confirmée ! Vous recevrez un email de confirmation.');
@@ -166,9 +232,8 @@ export default function ListingDetailPage() {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                        currentImageIndex === index ? 'border-primary' : 'border-transparent'
-                      }`}
+                      className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${currentImageIndex === index ? 'border-primary' : 'border-transparent'
+                        }`}
                     >
                       {img ? (
                         <Image src={img} alt={`Thumbnail ${index + 1}`} fill sizes="100px" className="object-cover" />
@@ -206,7 +271,7 @@ export default function ListingDetailPage() {
                         </div>
                       )}
                     </div>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleContactSeller}>
                       <MessageSquare className="mr-2 h-4 w-4" />
                       Contacter
                     </Button>
@@ -243,7 +308,7 @@ export default function ListingDetailPage() {
                     <CreditCard className="mr-2 h-5 w-5" />
                     Acheter maintenant
                   </Button>
-                  <Button variant="outline" className="w-full" size="lg">
+                  <Button variant="outline" className="w-full" size="lg" onClick={handleContactSeller}>
                     <MessageSquare className="mr-2 h-5 w-5" />
                     Contacter le vendeur
                   </Button>
@@ -275,6 +340,83 @@ export default function ListingDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Contact Seller Modal */}
+      <Dialog open={showContactModal} onOpenChange={setShowContactModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Contacter le vendeur
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Listing Preview */}
+            <div className="bg-muted/50 rounded-lg p-4 flex gap-4">
+              <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                {listing.images?.[0] ? (
+                  <Image
+                    src={listing.images[0]}
+                    alt={listing.title}
+                    width={64}
+                    height={64}
+                    className="rounded-lg object-cover"
+                  />
+                ) : (
+                  <Package className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{listing.title}</p>
+                <p className="text-primary font-bold">{formatPrice(listing.price)}</p>
+                <p className="text-sm text-muted-foreground">
+                  Vendeur: {listing.seller?.company}
+                </p>
+              </div>
+            </div>
+
+            {/* Message Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Votre message</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Écrivez votre message au vendeur..."
+                rows={4}
+                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <p className="text-xs text-muted-foreground">
+                Conseil: Posez des questions sur l'état, la disponibilité ou la livraison
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                onClick={handleSendMessage}
+                disabled={sendingMessage || !message.trim()}
+              >
+                {sendingMessage ? (
+                  'Envoi...'
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Envoyer le message
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowContactModal(false)}
+                disabled={sendingMessage}
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Modal */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
