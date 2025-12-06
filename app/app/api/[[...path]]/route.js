@@ -3,6 +3,8 @@ import { connectDB } from '@/lib/db';
 import { hashPassword, comparePassword, generateToken, getUserFromRequest } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { generateInvoicePDF } from '@/lib/pdf';
+import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/email';
+import { validateSiret } from '@/lib/insee';
 import { v4 as uuidv4 } from 'uuid';
 import { registerSchema, loginSchema, createListingSchema, updateListingSchema, sendMessageSchema, updateTransactionStatusSchema } from '@/lib/validation';
 
@@ -103,6 +105,146 @@ async function handleRegister(request) {
   } catch (error) {
     console.error('Register error:', error);
     return errorResponse('Erreur lors de la création du compte', 500);
+  }
+}
+
+// ===== EMAIL VERIFICATION =====
+
+async function handleVerifyEmail(request) {
+  try {
+    const { token } = await request.json();
+    if (!token) return errorResponse('Token requis');
+
+    const db = await connectDB();
+    const users = db.collection('users');
+
+    const user = await users.findOne({ emailVerifyToken: token });
+    if (!user) return errorResponse('Token invalide ou expiré', 400);
+
+    // Check if token expired (24h)
+    const tokenDate = new Date(user.emailVerifyTokenCreated);
+    if (Date.now() - tokenDate.getTime() > 24 * 60 * 60 * 1000) {
+      return errorResponse('Token expiré', 400);
+    }
+
+    await users.updateOne(
+      { id: user.id },
+      { $set: { emailVerified: true, emailVerifyToken: null, emailVerifyTokenCreated: null } }
+    );
+
+    return NextResponse.json({ message: 'Email vérifié avec succès' });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    return errorResponse('Erreur de vérification', 500);
+  }
+}
+
+async function handleForgotPassword(request) {
+  try {
+    const { email } = await request.json();
+    if (!email) return errorResponse('Email requis');
+
+    const db = await connectDB();
+    const users = db.collection('users');
+    const user = await users.findOne({ email });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return NextResponse.json({ message: 'Si un compte existe, un email sera envoyé' });
+    }
+
+    const resetToken = uuidv4();
+    await users.updateOne(
+      { id: user.id },
+      { $set: { resetToken, resetTokenCreated: new Date().toISOString() } }
+    );
+
+    const baseUrl = request.headers.get('origin') || 'http://localhost:3000';
+    await sendPasswordResetEmail(email, resetToken, baseUrl);
+
+    return NextResponse.json({ message: 'Email de réinitialisation envoyé' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return errorResponse('Erreur', 500);
+  }
+}
+
+async function handleResetPassword(request) {
+  try {
+    const { token, password } = await request.json();
+    if (!token || !password) return errorResponse('Token et mot de passe requis');
+    if (password.length < 6) return errorResponse('Mot de passe trop court');
+
+    const db = await connectDB();
+    const users = db.collection('users');
+    const user = await users.findOne({ resetToken: token });
+
+    if (!user) return errorResponse('Token invalide', 400);
+
+    // Check if token expired (1h)
+    const tokenDate = new Date(user.resetTokenCreated);
+    if (Date.now() - tokenDate.getTime() > 60 * 60 * 1000) {
+      return errorResponse('Token expiré', 400);
+    }
+
+    const hashedPassword = hashPassword(password);
+    await users.updateOne(
+      { id: user.id },
+      { $set: { password: hashedPassword, resetToken: null, resetTokenCreated: null } }
+    );
+
+    return NextResponse.json({ message: 'Mot de passe modifié' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return errorResponse('Erreur', 500);
+  }
+}
+
+async function handleChangePassword(request) {
+  try {
+    const user = await requireAuth(request);
+    if (!user) return errorResponse('Non autorisé', 401);
+
+    const { currentPassword, newPassword } = await request.json();
+    if (!currentPassword || !newPassword) return errorResponse('Mots de passe requis');
+    if (newPassword.length < 6) return errorResponse('Nouveau mot de passe trop court');
+
+    const db = await connectDB();
+    const users = db.collection('users');
+    const dbUser = await users.findOne({ id: user.id });
+
+    if (!dbUser || !comparePassword(currentPassword, dbUser.password)) {
+      return errorResponse('Mot de passe actuel incorrect', 400);
+    }
+
+    const hashedPassword = hashPassword(newPassword);
+    await users.updateOne({ id: user.id }, { $set: { password: hashedPassword } });
+
+    return NextResponse.json({ message: 'Mot de passe modifié' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return errorResponse('Erreur', 500);
+  }
+}
+
+async function handleUpdateProfile(request) {
+  try {
+    const user = await requireAuth(request);
+    if (!user) return errorResponse('Non autorisé', 401);
+
+    const { company, siret } = await request.json();
+    const db = await connectDB();
+    const users = db.collection('users');
+
+    await users.updateOne(
+      { id: user.id },
+      { $set: { company: company || '', siret: siret || '' } }
+    );
+
+    return NextResponse.json({ message: 'Profil mis à jour' });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return errorResponse('Erreur', 500);
   }
 }
 
@@ -896,6 +1038,18 @@ export async function POST(request, { params }) {
   if (path === 'auth/login') {
     return handleLogin(request);
   }
+  if (path === 'auth/verify-email') {
+    return handleVerifyEmail(request);
+  }
+  if (path === 'auth/forgot-password') {
+    return handleForgotPassword(request);
+  }
+  if (path === 'auth/reset-password') {
+    return handleResetPassword(request);
+  }
+  if (path === 'auth/change-password') {
+    return handleChangePassword(request);
+  }
 
   // Listings routes
   if (path === 'listings') {
@@ -925,6 +1079,18 @@ export async function POST(request, { params }) {
     return handleMarkMessageAsRead(request);
   }
 
+  // SIRET validation
+  if (path === 'validate-siret') {
+    try {
+      const { siret } = await request.json();
+      if (!siret) return errorResponse('SIRET requis');
+      const result = await validateSiret(siret);
+      return NextResponse.json(result);
+    } catch (error) {
+      return errorResponse('Erreur de validation', 500);
+    }
+  }
+
   return errorResponse('Route non trouvée', 404);
 }
 
@@ -941,6 +1107,11 @@ export async function PUT(request, { params }) {
   if (path.startsWith('transactions/') && path.endsWith('/status')) {
     const id = path.split('/')[1];
     return handleUpdateTransactionStatus(request, id);
+  }
+
+  // Profile route
+  if (path === 'auth/profile') {
+    return handleUpdateProfile(request);
   }
 
   return errorResponse('Route non trouvée', 404);
