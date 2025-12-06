@@ -5,6 +5,7 @@ import { uploadToCloudinary } from '@/lib/cloudinary';
 import { generateInvoicePDF } from '@/lib/pdf';
 import { sendVerificationEmail, sendPasswordResetEmail } from '@/lib/email';
 import { validateSiret } from '@/lib/insee';
+import { createCheckoutSession } from '@/lib/stripe';
 import { v4 as uuidv4 } from 'uuid';
 import { registerSchema, loginSchema, createListingSchema, updateListingSchema, sendMessageSchema, updateTransactionStatusSchema } from '@/lib/validation';
 
@@ -1088,6 +1089,45 @@ export async function POST(request, { params }) {
       return NextResponse.json(result);
     } catch (error) {
       return errorResponse('Erreur de validation', 500);
+    }
+  }
+
+  // Stripe checkout
+  if (path === 'stripe/checkout') {
+    try {
+      const user = await requireAuth(request);
+      if (!user) return errorResponse('Non autorisé', 401);
+
+      const { listingId } = await request.json();
+      if (!listingId) return errorResponse('Annonce requise');
+
+      const db = await connectDB();
+      const listings = db.collection('listings');
+      const listing = await listings.findOne({ id: listingId });
+
+      if (!listing) return errorResponse('Annonce non trouvée', 404);
+      if (listing.sellerId === user.id) return errorResponse('Vous ne pouvez pas acheter votre propre annonce');
+      if (listing.status === 'sold') return errorResponse('Cette annonce a déjà été vendue');
+
+      const origin = request.headers.get('origin') || 'http://localhost:3000';
+      const result = await createCheckoutSession({
+        listingId: listing.id,
+        listingTitle: listing.title,
+        price: listing.price,
+        buyerEmail: user.email,
+        sellerId: listing.sellerId,
+        successUrl: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}&listing=${listingId}`,
+        cancelUrl: `${origin}/listing/${listingId}`,
+      });
+
+      if (!result.success) {
+        return errorResponse(result.error || 'Erreur Stripe', 500);
+      }
+
+      return NextResponse.json({ url: result.url, sessionId: result.sessionId });
+    } catch (error) {
+      console.error('Stripe checkout error:', error);
+      return errorResponse('Erreur de paiement', 500);
     }
   }
 

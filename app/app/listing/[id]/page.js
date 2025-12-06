@@ -68,7 +68,7 @@ export default function ListingDetailPage() {
     }
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
       toast.error('Veuillez vous connecter pour acheter');
@@ -81,7 +81,30 @@ export default function ListingDetailPage() {
       return;
     }
 
-    setShowPaymentModal(true);
+    setProcessing(true);
+    try {
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ listingId: listing.id }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Erreur lors du paiement');
+        setProcessing(false);
+      }
+    } catch (error) {
+      toast.error('Erreur réseau');
+      setProcessing(false);
+    }
   };
 
   const handleContactSeller = () => {
